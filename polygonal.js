@@ -4,10 +4,12 @@
     this.canvas = document.getElementById('imageDisplay');
     this.context = this.canvas.getContext('2d');
     this.MAX_NUM_POINTS; // use for calculated range
-    this.num_points = 50;
+    this.num_points = 200;
     this.BASE_X = 2;
     this.BASE_Y = 3;
-    this.PADDING = 250;
+    this.PADDING = 400;
+    // Array of Triangle objects
+    this.triangles = [];
   }
 
   Polygonal.prototype.initialize = function() {
@@ -22,25 +24,90 @@
     var triangles = createDelaunayTriangles.call(this, points);
   }
 
+  // Objects
+  function Point(x, y) {
+    this.x = x;
+    this.y = y;
+    this.getX = function() {
+      return this.x;
+    }
+    this.getY = function() {
+      return this.y;
+    }
+    this.setX = function(new_x) {
+      this.x = new_x;
+    }
+    this.setY = function(new_y) {
+      this.y = new_y;
+    }
+  }
+
+  function Triangle(point1, point2, point3) {
+    this.point1 = point1;
+    this.point2 = point2;
+    this.point3 = point3;
+    this.drawTriangleOnCanvas = function(canvas, context) {
+      //console.log("Triangle: (" + this.point1.getX() + ", " + this.point1.getY() + ")" + "(" + this.point2.getX() + ", " + this.point2.getY() + ")" + "(" + this.point1.getX() + ", " + this.point1.getY()+")")
+      context.beginPath();
+      context.moveTo(this.point1.getX(), this.point1.getY());
+      context.lineTo(this.point2.getX(), this.point2.getY());
+      context.lineTo(this.point3.getX(), this.point3.getY());
+      context.lineTo(this.point1.getX(), this.point1.getY());
+      var center = this.getCenterPoint();
+      /*
+      if (center.getX() > canvas.width) {
+        console.log('X coordinate: ' + center.getX());
+        center.setX(canvas.width);
+      } else if (center.getX() < 0) {
+        center.setX(0);
+      }
+      if (center.getY() > canvas.height) {
+        console.log('Y coordinate: ' + center.getY());
+        center.setY(canvas.height);
+      } else if (center.getY() < 0) {
+        center.setY(0);
+      }*/
+      var pixel = context.getImageData(center.getX(), center.getY(), 1, 1);
+      var data = pixel.data;
+      var rgb = 'rgb(' + data[0] + ',' + data[1] + ',' + data[2] + ')';
+      context.fillStyle = rgb;
+      context.fill();
+    }
+    this.getCenterPoint = function() {
+      var sumX = this.point1.getX() + this.point2.getX() + this.point3.getX();
+      var sumY = this.point1.getY() + this.point2.getY() + this.point3.getY();
+      return new Point(sumX, sumY);
+    }
+  }
+
   // This should also fill them. Aaaaand randomly change the colors...
   function createDelaunayTriangles(points) {
+    // Triangulate returns Array of indices from 'points'. Each group of 3
+    // consecutive points represent the 3 indices in points that form a
+    // triangle.
     var triangles = Delaunay.triangulate(points);
     // Draw lines between points
-    var low = 0,
-        high = 3;
-    this.context.beginPath();
-    for (high; high < triangles.length; high+=3) {
-      var tr = triangles.slice(low, high);
-      var i = 1;
-      this.context.moveTo(points[tr[0]][0], points[tr[0]][1]);
-      for (i; i < tr.length; i++) {
-        this.context.lineTo(points[tr[i]][0], points[tr[i]][1]);
-      }
-      this.context.lineTo(points[tr[0]][0], points[tr[0]][1]);
-      low = high;
+    var i = 0;
+    var point1, point2, point3;
+    var index1, index2, index3;
+    for (i; i < triangles.length; i+=3) {
+      index1 = triangles[i];
+      index2 = triangles[i+1];
+      index3 = triangles[i+2];
+
+      point1 = new Point(points[index1][0], points[index1][1]);
+      point2 = new Point(points[index2][0], points[index2][1]);
+      point3 = new Point(points[index3][0], points[index3][1]);
+      this.triangles.push(new Triangle(point1, point2, point3));
     }
-    this.context.fill();
-    return triangles;
+    drawTriangles.call(this);
+    function drawTriangles() {
+      tri = this.triangles;
+      var i = this.triangles.length - 1;
+      do {
+        this.triangles[i].drawTriangleOnCanvas(this.canvas, this.context);
+      } while(i--);
+    }
   }
 
   function initializeEvents() {
@@ -88,7 +155,6 @@
     }
     return pointsArray;
   }
-
   function fadeInRectangle(x, y, w, h, r, g, b) {
     var _ = this;
     var steps = 50,
