@@ -7,7 +7,7 @@
     this.num_points = 200;
     this.BASE_X = 2;
     this.BASE_Y = 3;
-    this.PADDING = 400;
+    this.PADDING = 100;
     // Array of Triangle objects
     this.triangles = [];
   }
@@ -47,13 +47,13 @@
     this.point2 = point2;
     this.point3 = point3;
     this.drawTriangleOnCanvas = function(canvas, context) {
-      //console.log("Triangle: (" + this.point1.getX() + ", " + this.point1.getY() + ")" + "(" + this.point2.getX() + ", " + this.point2.getY() + ")" + "(" + this.point1.getX() + ", " + this.point1.getY()+")")
       context.beginPath();
       context.moveTo(this.point1.getX(), this.point1.getY());
       context.lineTo(this.point2.getX(), this.point2.getY());
       context.lineTo(this.point3.getX(), this.point3.getY());
       context.lineTo(this.point1.getX(), this.point1.getY());
       var center = this.getCenterPoint();
+      context.fillRect(center.getX(), center.getY(), 15, 15);
       /*
       if (center.getX() > canvas.width) {
         console.log('X coordinate: ' + center.getX());
@@ -76,7 +76,7 @@
     this.getCenterPoint = function() {
       var sumX = this.point1.getX() + this.point2.getX() + this.point3.getX();
       var sumY = this.point1.getY() + this.point2.getY() + this.point3.getY();
-      return new Point(sumX, sumY);
+      return new Point(sumX/3, sumY/3);
     }
   }
 
@@ -86,7 +86,6 @@
     // consecutive points represent the 3 indices in points that form a
     // triangle.
     var triangles = Delaunay.triangulate(points);
-    // Draw lines between points
     var i = 0;
     var point1, point2, point3;
     var index1, index2, index3;
@@ -102,7 +101,6 @@
     }
     drawTriangles.call(this);
     function drawTriangles() {
-      tri = this.triangles;
       var i = this.triangles.length - 1;
       do {
         this.triangles[i].drawTriangleOnCanvas(this.canvas, this.context);
@@ -127,7 +125,6 @@
       }
       reader.readAsDataURL(e.target.files[0]);
     }
-    console.log('finishing initializeEvents');
   }
 
   function halton(index, base) {
@@ -148,30 +145,11 @@
     var x,y;
     var pointsArray = [];
     for (var i = 1; i <= this.num_points; i++) {
-      x = halton(i, this.BASE_X) * (this.canvas.width + this.PADDING) - this.PADDING/2;
-      y = halton(i, this.BASE_Y) * (this.canvas.height + this.PADDING) - this.PADDING/2;
-      fadeInRectangle.call(this, x, y, 3, 3, 0);
+      x = (halton(i, this.BASE_X) * (this.canvas.width + this.PADDING)) - this.PADDING/2;
+      y = (halton(i, this.BASE_Y) * (this.canvas.height + this.PADDING)) - this.PADDING/2;
       pointsArray.push([x,y]);
     }
     return pointsArray;
-  }
-  function fadeInRectangle(x, y, w, h, r, g, b) {
-    var _ = this;
-    var steps = 50,
-        dr = 255 / steps,
-        dg = 255 / steps,
-        db = 255 / steps,
-        i = 0,
-        interval = setInterval(function() {
-          _.context.fillStyle = 'rgb(' + Math.round(255 - dr * i) + ','
-                                       + Math.round(255 - dg * i) + ','
-                                       + Math.round(255 - db * i) + ')';
-          _.context.fillRect(x, y, w, h);
-          i++;
-          if(i === steps) {
-            clearInterval(interval);
-          }
-        }, 30);
   }
 }();
 
