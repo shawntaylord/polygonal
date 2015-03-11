@@ -4,10 +4,10 @@
     this.canvas = document.getElementById('imageDisplay');
     this.context = this.canvas.getContext('2d');
     this.MAX_NUM_POINTS; // use for calculated range
-    this.num_points = 200;
+    this.num_points = 250;
     this.BASE_X = 2;
     this.BASE_Y = 3;
-    this.PADDING = 100;
+    this.PADDING = 300;
     // Array of Triangle objects
     this.triangles = [];
   }
@@ -53,20 +53,18 @@
       context.lineTo(this.point3.getX(), this.point3.getY());
       context.lineTo(this.point1.getX(), this.point1.getY());
       var center = this.getCenterPoint();
-      context.fillRect(center.getX(), center.getY(), 15, 15);
-      /*
+
       if (center.getX() > canvas.width) {
-        console.log('X coordinate: ' + center.getX());
-        center.setX(canvas.width);
+        center.setX(canvas.width-1);
       } else if (center.getX() < 0) {
         center.setX(0);
       }
       if (center.getY() > canvas.height) {
-        console.log('Y coordinate: ' + center.getY());
-        center.setY(canvas.height);
+        // ITS ZERO INDEXED YOOOOMYGAWD
+        center.setY(canvas.height-1);
       } else if (center.getY() < 0) {
         center.setY(0);
-      }*/
+      }
       var pixel = context.getImageData(center.getX(), center.getY(), 1, 1);
       var data = pixel.data;
       var rgb = 'rgb(' + data[0] + ',' + data[1] + ',' + data[2] + ')';
@@ -116,10 +114,12 @@
       reader.onload = function(event){
           var img = new Image();
           img.onload = function(){
-            _.canvas.width = img.width;
-            _.canvas.height = img.height;
+            var aspect_ratio = img.width / img.height;
+            _.canvas.width = img.width <= 1024 ? img.width : 1024;
+            _.canvas.height = _.canvas.width / aspect_ratio;
             _.MAX_NUM_POINTS = img.width * img.height;
-            _.context.drawImage(img, 0, 0);
+            _.context.drawImage(img, 0, 0, img.width, img.height,
+                                     0, 0, _.canvas.width, _.canvas.height);
           }
           img.src = event.target.result;
       }
@@ -161,9 +161,4 @@ window.onload = function() {
   manualStart.onclick = function() {
     ply.polygonize();
   }
-
-  // Give user input to pick number of points and possibly
-  // percent darkened? User must hit another button to run
-  // polygonize.
-
 }
